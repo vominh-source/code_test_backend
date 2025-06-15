@@ -1,32 +1,51 @@
-# Stage 1: Build NestJS app
-FROM node:18-alpine AS builder
+# syntax = docker/dockerfile:1
 
+# Adjust NODE_VERSION as desired
+ARG NODE_VERSION=20.15.0
+FROM node:${NODE_VERSION}-slim AS base
+
+LABEL fly_launch_runtime="NestJS/Prisma"
+
+# NestJS/Prisma app lives here
 WORKDIR /app
 
-COPY package*.json ./
+# Set production environment
+ENV NODE_ENV="production"
 
-RUN npm install
 
-COPY . .
+# Throw-away build stage to reduce size of final image
+FROM base AS build
 
-# 👇 Prisma generate nếu bạn cần (nếu không có lỗi thì có thể bỏ qua)
+# Install packages needed to build node modules
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y build-essential node-gyp openssl pkg-config python-is-python3
+
+# Install node modules
+COPY package-lock.json package.json ./
+RUN npm ci --include=dev
+
+# Generate Prisma Client
+COPY prisma .
 RUN npx prisma generate
 
-# 👇 Migrate DB nếu bạn muốn deploy schema DB tự động
-# RUN npx prisma migrate deploy
+# Copy application code
+COPY . .
 
-# 👇 Build mã nguồn NestJS ra thư mục dist/
+# Build application
 RUN npm run build
 
-# Stage 2: Chạy app production
-FROM node:18-alpine
 
-WORKDIR /app
+# Final stage for app image
+FROM base
 
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package*.json ./
+# Install packages needed for deployment
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y openssl && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
+# Copy built application
+COPY --from=build /app /app
 
-# 👇 Chạy app
-CMD ["node", "dist/main"]
+# Start the server by default, this can be overwritten at runtime
+EXPOSE 3333
+CMD [ "npm", "run", "start" ]

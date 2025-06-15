@@ -9,6 +9,12 @@ async function bootstrap() {
       whitelist: true, // chỉ cho phép các trường đã được định nghĩa trong DTO
     }
   ));
+  app.enableCors({
+    origin: 'http://localhost:3000', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
+  });
+
   await app.listen(process.env.PORT ?? 3333);
 }
 bootstrap();
