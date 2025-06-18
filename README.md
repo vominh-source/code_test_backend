@@ -111,6 +111,8 @@ A web application for THPT 2024 exam score lookup and analysis – search by reg
   <p align="center">
     An web app for looking exam score
     <a href="https://youtu.be/TftywGnUuWE">View How to run</a>
+  </p>
+  <p align="center">
     <a href="https://youtu.be/A2cIf4anB8o">View Demo</a>
   </p>
 </div>
